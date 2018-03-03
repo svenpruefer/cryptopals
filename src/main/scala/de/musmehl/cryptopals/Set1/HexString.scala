@@ -10,6 +10,17 @@ import de.musmehl.cryptopals.Set1
 case class HexString(stringContent: String) {
 
     /**
+      * xor bitwise with that
+      *
+      * @param that the second argument as a HexString
+      * @return the bitwise xor'd HexString
+      */
+    def xor(that: HexString): HexString = {
+        val xoredSequence = this.toByteArray.zip(that.toByteArray).map(x => x._1 ^ x._2).map(_.toByte)
+        HexString(xoredSequence.map(byteToHexMap).mkString)
+    }
+
+    /**
       * yields the hex string as a sequence of bytes according to the hexToByteMap.
       *
       * Notice that every hex character is an actual byte, i.e. 8 bits instead of the necessary 4 bits.
