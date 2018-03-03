@@ -18,4 +18,11 @@ class CryptopalsProblems extends FunSuite {
 
         assert(input1.xor(input2) == output)
     }
+
+    test("Challenge 3") {
+        val input = HexString("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
+        val (minimum, result) = decodeXorLetterEncryption(input)
+
+        println(s"Found key: $minimum with resulting string: ${result.toAsciiString}")
+    }
 }

@@ -77,4 +77,44 @@ package object Set1 {
         (15, 'f')
     )
 
+    def scoreEnglishPlainTextString(string: String): Double = {
+        val relativeFrequency = Map[Char, Double](
+            ('a', 0.08167),('b', 0.01492),
+            ('c', 0.02782),('d', 0.04253),
+            ('e', 0.12702),('f', 0.02228),
+            ('g', 0.02015),('h', 0.06094),
+            ('i', 0.06966),('j', 0.00153),
+            ('k', 0.00772),('l', 0.04025),
+            ('m', 0.02406),('n', 0.06749),
+            ('o', 0.07507),('p', 0.01929),
+            ('q', 0.00095),('r', 0.05987),
+            ('s', 0.06327),('t', 0.09056),
+            ('u', 0.02758),('v', 0.00978),
+            ('w', 0.02360),('x', 0.00150),
+            ('y', 0.01974),('z', 0.00074)
+        )
+
+        val totalNumberOfLetters = string.count(_.isLetter)
+        val frequencyInString =
+            (for (letter <- relativeFrequency.keys)
+                yield (letter, string.count(_.toLower == letter).toDouble / totalNumberOfLetters)).toMap[Char, Double]
+
+        relativeFrequency.keys.map(x => math.pow(relativeFrequency(x) - frequencyInString(x), 2)).sum
+        + math.pow((totalNumberOfLetters - string.length).toDouble / totalNumberOfLetters, 2)
+    }
+
+    def decodeXorLetterEncryption(hexString: HexString): (Char, HexString) = {
+        require(hexString.stringContent.length % 2 == 0, "HexString should contain an even number of hex characters")
+
+        val n = hexString.stringContent.length / 2
+
+        val deviations = (for (letter <- "abcdefghijklmnopqrstuvwxyz") yield
+            (letter, scoreEnglishPlainTextString(
+                HexString.fromAsciiString(List.fill(n)(letter).mkString).xor(hexString).toAsciiString)))
+            .toMap[Char, Double]
+        val minimum = deviations.find(x => deviations(x._1) == deviations.values.min).get._1
+        (minimum, HexString.fromAsciiString(List.fill(n)(minimum).mkString).xor(hexString))
+    }
+
+
 }

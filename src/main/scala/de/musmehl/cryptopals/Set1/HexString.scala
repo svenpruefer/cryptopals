@@ -27,6 +27,11 @@ case class HexString(stringContent: String) {
       */
     val toByteArray: Seq[Byte] = stringContent.map(Set1.hexToByteMap)
 
+    /**
+      * converts a hex string to a base64 encoded string
+      *
+      * @return the hex string as a base64 string
+      */
     def toBase64String: Base64String = {
         val sequenceOfHexBytes: Seq[Seq[Byte]] = toByteArray.grouped(6).toList.map(_.padTo[Byte, Seq[Byte]](6, 0))
         val sequenceOfBase64Bytes: Seq[Seq[Byte]] = sequenceOfHexBytes.map(mapTripleOfBytesToQuadrupleOfBase64Bytes)
@@ -56,4 +61,24 @@ case class HexString(stringContent: String) {
 
         Seq(piece1, piece2, piece3, piece4)
     }
+
+    private def mapPairOfHexBytesToByte(array: Seq[Byte]): Byte = {
+        require(array.length == 2, "Only works for pairs of bytes")
+        require(array.forall(_ < 16), "Every byte needs to correspond to a hex character, i.e. needs to be less than 16")
+
+        ((array.head << 4) + array(1)).toByte
+    }
+
+    val toAsciiString: String = {
+       toByteArray.grouped(2).toList.map(_.padTo[Byte, Seq[Byte]](2,0)).map(mapPairOfHexBytesToByte).map(_.toChar).mkString
+    }
+}
+
+object HexString {
+    def fromAsciiString(string: String): HexString = {
+        require(string.forall(_.toByte < 128), "String needs to consist of Ascii characters only")
+
+        HexString(string.map(_.toByte).flatMap(x => List(byteToHexMap((x >>> 4).toByte), byteToHexMap((x % 16).toByte))).mkString)
+    }
+
 }
