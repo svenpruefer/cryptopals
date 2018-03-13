@@ -11,6 +11,7 @@ lazy val cryptopals = (project in file(".")).
         scalastyleConfig := file("scalastyle_config.xml"),
         libraryDependencies ++= Seq(
             scalaTest,
-            scalaCheck
+            scalaCheck,
+            scalaArm % "test"
         )
     )

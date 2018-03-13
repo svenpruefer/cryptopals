@@ -1,4 +1,4 @@
-package de.musmehl.cryptopals.Set1
+package de.musmehl.cryptopals.set1
 
 /**
   * Class of a base64 string supplying various methods for dealing with base64 encoded strings

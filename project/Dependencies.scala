@@ -5,5 +5,5 @@ object Dependencies {
 
     lazy val scalaCheck = "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
 
-
+    lazy val scalaArm = "com.jsuereth" %% "scala-arm" % "2.0"
 }

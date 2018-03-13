@@ -1,6 +1,6 @@
-package de.musmehl.cryptopals.Set1
+package de.musmehl.cryptopals.set1
 
-import de.musmehl.cryptopals.Set1
+import de.musmehl.cryptopals.set1
 
 /**
   * Class of a hex string supplying various methods for dealing with hex encoded strings
@@ -25,7 +25,7 @@ case class HexString(stringContent: String) {
       *
       * Notice that every hex character is an actual byte, i.e. 8 bits instead of the necessary 4 bits.
       */
-    val toByteArray: Seq[Byte] = stringContent.map(Set1.hexToByteMap)
+    val toByteArray: Seq[Byte] = stringContent.map(set1.hexToByteMap)
 
     /**
       * converts a hex string to a base64 encoded string

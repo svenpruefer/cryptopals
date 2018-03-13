@@ -1,6 +1,7 @@
-package de.musmehl.cryptopals.Set1
+package de.musmehl.cryptopals.set1
 
 import org.scalatest.FunSuite
+import resource._
 
 class CryptopalsProblems extends FunSuite {
 
@@ -21,8 +22,19 @@ class CryptopalsProblems extends FunSuite {
 
     test("Challenge 3") {
         val input = HexString("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
-        val (minimum, result) = decodeXorLetterEncryption(input)
+        val (minimum, result, _) = decodeXorLetterEncryption(input)
 
         println(s"Found key: $minimum with resulting string: ${result.toAsciiString}")
+        assert(minimum == 'X')
+        assert(result.toAsciiString == "Cooking MC's like a pound of bacon")
+    }
+
+    test("Challenge 4") {
+        for (source <- managed(scala.io.Source.fromURL(getClass.getResource("/4.txt")))) {
+            val (minimum, original, decoded) = findXorLine(source)
+            println(s"Found key: $minimum for line: $original with decoded result: $decoded")
+            assert(minimum == '5')
+            assert(decoded == "Now that the party is jumping\n")
+        }
     }
 }
