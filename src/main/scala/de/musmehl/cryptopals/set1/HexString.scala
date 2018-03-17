@@ -72,6 +72,13 @@ case class HexString(stringContent: String) {
     val toAsciiString: String = {
        toByteArray.grouped(2).toList.map(_.padTo[Byte, Seq[Byte]](2,0)).map(mapPairOfHexBytesToByte).map(_.toChar).mkString
     }
+
+    def xorWithRepeatingKey(key: HexString): HexString = {
+        val (m, n) = BigInt(stringContent.length) /% BigInt(key.stringContent.length)
+        val actualKey = HexString(
+            List.fill(m.toInt)(key.stringContent).flatten.mkString + key.stringContent.substring(0,n.toInt))
+        this.xor(actualKey)
+    }
 }
 
 object HexString {

@@ -138,5 +138,12 @@ package object set1 {
         (minimum, string, HexString.fromAsciiString(List.fill(string.length / 2)(minimum).mkString).xor(HexString(string)).toAsciiString)
     }
 
+    def repeatingKeyXor(argument: String, key: String): String = {
+        val hexArgument = HexString.fromAsciiString(argument)
+        val hexKey = HexString.fromAsciiString(key)
+
+        hexArgument.xorWithRepeatingKey(hexKey).stringContent
+    }
+
 
 }
