@@ -164,7 +164,6 @@ package object set1 {
         hexArgument.xorWithRepeatingKey(hexKey).stringContent
     }
 
-
-
-
+    def calculateHammingDistance(arg1: String, arg2: String): Int =
+        HexString.fromAsciiString(arg1).xor(HexString.fromAsciiString(arg2)).countBinaryOnes
 }

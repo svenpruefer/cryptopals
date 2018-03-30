@@ -50,10 +50,10 @@ I go crazy when I hear a cymbal"""
     }
 
     test("Challenge 6 Hamming Distance") {
-        val input1 = HexString.fromAsciiString("this is a test")
-        val input2 = HexString.fromAsciiString("wokka wokka!!!")
+        val input1 = "this is a test"
+        val input2 = "wokka wokka!!!"
 
-        val hammingDistance = input1.xor(input2).countBinaryOnes
+        val hammingDistance = calculateHammingDistance(input1, input2)
 
         assert(hammingDistance == 37)
     }
