@@ -79,6 +79,8 @@ case class HexString(stringContent: String) {
             List.fill(m.toInt)(key.stringContent).flatten.mkString + key.stringContent.substring(0,n.toInt))
         this.xor(actualKey)
     }
+
+    def countBinaryOnes: Int = toByteArray.map(byteToCountOfBinaryOnes).sum
 }
 
 object HexString {

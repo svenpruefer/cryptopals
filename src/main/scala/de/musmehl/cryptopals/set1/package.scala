@@ -60,6 +60,25 @@ package object set1 {
         ('f', 15)
     )
 
+    val byteToCountOfBinaryOnes: Map[Byte, Int] = Map(
+        (0, 0),
+        (1, 1),
+        (2, 1),
+        (3, 2),
+        (4, 1),
+        (5, 2),
+        (6, 2),
+        (7, 3),
+        (8, 1),
+        (9, 2),
+        (10, 2),
+        (11, 3),
+        (12, 2),
+        (13, 3),
+        (14, 3),
+        (15, 4)
+    )
+
     val byteToHexMap: Map[Byte, Char] = Map(
         (0, '0'),
         (1, '1'),
@@ -144,6 +163,8 @@ package object set1 {
 
         hexArgument.xorWithRepeatingKey(hexKey).stringContent
     }
+
+
 
 
 }

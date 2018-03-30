@@ -48,4 +48,13 @@ I go crazy when I hear a cymbal"""
 
         assert(repeatingKeyXor(input, key) == output)
     }
+
+    test("Challenge 6 Hamming Distance") {
+        val input1 = HexString.fromAsciiString("this is a test")
+        val input2 = HexString.fromAsciiString("wokka wokka!!!")
+
+        val hammingDistance = input1.xor(input2).countBinaryOnes
+
+        assert(hammingDistance == 37)
+    }
 }
