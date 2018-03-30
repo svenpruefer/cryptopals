@@ -71,4 +71,20 @@ I go crazy when I hear a cymbal"""
 
         assert(result == input)
     }
+
+    test("Base64String to HexString conversrion") {
+        val input = "39984udaWA20ARef6Et2"
+
+        assert(Base64String(input).toHexString.toBase64String.stringContent == input)
+    }
+
+    test("Challenge 6 Determine average Hamming distance for various key sizes") {
+        for (source <- managed(scala.io.Source.fromURL(getClass.getResource("/6.txt")))) {
+            val test = "haha"
+            val input = source.getLines.toList.map(Base64String).toIndexedSeq.apply(0)
+            val results = for { keysize <- 1 to 2} yield (keysize, averageHammingDistance(input, keysize))
+            val (keysize, minHammingDistance) = results.minBy(_._1)
+            println(s"result is keysize $keysize with Hamming distance $minHammingDistance")
+        }
+    }
 }

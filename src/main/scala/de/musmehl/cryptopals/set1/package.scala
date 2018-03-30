@@ -3,7 +3,7 @@ package de.musmehl.cryptopals
 import scala.io.BufferedSource
 
 package object set1 {
-    val base64ToByteMap: Map[Char, Byte] = Map(
+    val  base64ToByteMap: Map[Char, Byte] = Map(
         ('A', 0), ('Q', 16), ('g', 32), ('w', 48),
         ('B', 1), ('R', 17), ('h', 33), ('x', 49),
         ('C', 2), ('S', 18), ('i', 34), ('y', 50),
@@ -166,4 +166,17 @@ package object set1 {
 
     def calculateHammingDistance(arg1: String, arg2: String): Int =
         HexString.fromAsciiString(arg1).xor(HexString.fromAsciiString(arg2)).countBinaryOnes
+
+    def calculateHammingDistance(arg1: HexString, arg2: HexString): Int =
+        arg1.xor(arg2).countBinaryOnes
+
+    def averageHammingDistance(base64EncodedString: Base64String, keysize: Int): Float = {
+        val hexString = base64EncodedString.toHexString
+        val substrings = (1 to 4).map(hexString.extractHexString(_, keysize))
+        val pairs = for {
+            x <- substrings
+            y <- substrings if x != y
+        } yield (x, y)
+        pairs.map(x => calculateHammingDistance(x._1,x._2)).sum / 12
+    }
 }
