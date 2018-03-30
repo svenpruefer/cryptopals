@@ -25,7 +25,7 @@ case class HexString(stringContent: String) {
       *
       * Notice that every hex character is an actual byte, i.e. 8 bits instead of the necessary 4 bits.
       */
-    val toByteArray: Seq[Byte] = stringContent.map(set1.hexToByteMap)
+    val toByteArray: Seq[Byte] = stringContent.map(hexToByteMap)
 
     /**
       * converts a hex string to a base64 encoded string
@@ -81,6 +81,27 @@ case class HexString(stringContent: String) {
     }
 
     def countBinaryOnes: Int = toByteArray.map(byteToCountOfBinaryOnes).sum
+
+    private def extractBytes(position: Int, numberOfBytes: Int): Seq[Byte] = {
+        require(2 * position * numberOfBytes <= stringContent.length, "Cannot extract these bytes as the HexString" +
+            " contains not enough bytes.")
+        toByteArray.grouped(2 * numberOfBytes).toIndexedSeq.apply(position - 1)
+    }
+
+    /**
+      * extracts the group of 'numberOfBytes' bytes at 'position' place (counting from one) of the byte representation
+      * of the HexString. Note that every single hex character is saved as a byte instead of two hex characters as one
+      * byte
+      *
+      * @param position         position of byte-group to extract, starting at one
+      * @param numberOfBytes    size of groups of bytes which the hex string gets partitioned into
+      * @return                 extracted HexString
+      */
+    def extractHexString(position: Int, numberOfBytes: Int): HexString = {
+        require(2 * position * numberOfBytes <= stringContent.length, "Cannot extract these bytes as the HexString" +
+            " contains not enough bytes.")
+        HexString.fromByteArray(extractBytes(position, numberOfBytes))
+    }
 }
 
 object HexString {
@@ -88,6 +109,10 @@ object HexString {
         require(string.forall(_.toByte < 128), "String needs to consist of Ascii characters only")
 
         HexString(string.map(_.toByte).flatMap(x => List(byteToHexMap((x >>> 4).toByte), byteToHexMap((x % 16).toByte))).mkString)
+    }
+
+    def fromByteArray(byteArray: Seq[Byte]): HexString = {
+        HexString(byteArray.map(byteToHexMap).mkString)
     }
 
 }

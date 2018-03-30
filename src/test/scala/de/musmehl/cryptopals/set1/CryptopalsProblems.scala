@@ -57,4 +57,18 @@ I go crazy when I hear a cymbal"""
 
         assert(hammingDistance == 37)
     }
+
+    test("Challenge 6 Extract HexStrings") {
+        val input = "this isnt a test"
+        val result = HexString.fromAsciiString(input).extractHexString(2,3).toAsciiString
+
+        assert(result == "s i")
+    }
+
+    test("Convert ByteArray to HexString") {
+        val input = HexString("0123456789abcde")
+        val result = HexString.fromByteArray(input.toByteArray)
+
+        assert(result == input)
+    }
 }
