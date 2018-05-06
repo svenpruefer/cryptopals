@@ -3,7 +3,7 @@ package de.musmehl.cryptopals
 import scala.io.BufferedSource
 
 package object set1 {
-    val  base64ToByteMap: Map[Char, Byte] = Map(
+    val base64ToByteMap: Map[Char, Byte] = Map(
         ('A', 0), ('Q', 16), ('g', 32), ('w', 48),
         ('B', 1), ('R', 17), ('h', 33), ('x', 49),
         ('C', 2), ('S', 18), ('i', 34), ('y', 50),
@@ -19,7 +19,8 @@ package object set1 {
         ('M', 12), ('c', 28), ('s', 44), ('8', 60),
         ('N', 13), ('d', 29), ('t', 45), ('9', 61),
         ('O', 14), ('e', 30), ('u', 46), ('+', 62),
-        ('P', 15), ('f', 31), ('v', 47), ('/', 63)
+        ('P', 15), ('f', 31), ('v', 47), ('/', 63),
+        ('=', 0)
     )
 
     val byteToBase64Map: Map[Byte, Char] = Map(
@@ -98,7 +99,10 @@ package object set1 {
         (15, 'f')
     )
 
-    def scoreEnglishPlainTextString(string: String, nonLetterWeigth: Double = 0, controlWeigth: Double = 1): Double = {
+    def scoreEnglishPlainTextString(string: String,
+                                    nonLetterWeigth: Double = 0.1,
+                                    controlWeigth: Double = 1,
+                                    nonAsciiLetterWeigth: Double = 1): Double = {
         val relativeFrequency = Map[Char, Double](
             ('a', 0.08167), ('b', 0.01492),
             ('c', 0.02782), ('d', 0.04253),
@@ -115,28 +119,40 @@ package object set1 {
             ('y', 0.01974), ('z', 0.00074)
         )
 
-        val totalNumberOfLetters = string.count(x => (64.toByte < x.toByte && x.toByte < 91.toByte)
-            || (96.toByte < x.toByte && x.toByte < 123.toByte))
+        val totalNumberOfAsciiLetters = string.count(x => x.isLetter && x.toByte < 128)
+        val totalNumberOfSpaces = string.count(x => x == ' ')
         val frequencyInString =
             (for (letter <- relativeFrequency.keys)
-                yield (letter, string.count(_.toLower == letter).toDouble / totalNumberOfLetters)).toMap[Char, Double]
+                yield (letter, string.count(_.toLower == letter).toDouble / totalNumberOfAsciiLetters)).toMap[Char, Double]
 
-        relativeFrequency.keys.map(x => math.pow(relativeFrequency(x) - frequencyInString(x), 2)).sum +
-            nonLetterWeigth * math.pow((totalNumberOfLetters - string.length).toDouble / totalNumberOfLetters, 2) +
-            controlWeigth * math.pow((string.count(!_.isControl) - string.length).toDouble / totalNumberOfLetters, 2)
+        val nonAsciiLetters = string.count(x => x.isLetter && x.toByte > 127.toByte)
+
+        if (totalNumberOfAsciiLetters == 0) Double.MaxValue
+        else {
+            relativeFrequency.keys.map(x => math.pow(relativeFrequency(x) - frequencyInString(x), 2)).sum +
+                nonLetterWeigth * math.pow((totalNumberOfAsciiLetters + totalNumberOfSpaces - string.length).toDouble / totalNumberOfAsciiLetters, 2) +
+                controlWeigth * math.pow((string.count(!_.isControl) - string.length - string.count(x => x == '\n')).toDouble / totalNumberOfAsciiLetters, 2) +
+                nonAsciiLetterWeigth * math.pow(nonAsciiLetters.toDouble / totalNumberOfAsciiLetters, 2)
+        }
     }
 
-    def decodeXorLetterEncryption(hexString: HexString): (Char, HexString, Double) = {
+    def decodeXorLetterEncryption(hexString: HexString,
+                                  nonLetterWeigth: Double = 0.1,
+                                  controlWeigth: Double = 1,
+                                  nonAsciiLetterWeigth: Double = 1): (Char, HexString, Double) = {
         require(hexString.stringContent.length % 2 == 0, "HexString should contain an even number of hex characters")
 
         val n = hexString.stringContent.length / 2
 
-        val characters: List[Char] = (0 to 127).map(_.toByte.toChar).toList
+        val characters: List[Char] = (32 to 126).map(_.toByte.toChar).toList
 
         val deviations = (for (letter <- characters) yield
             (letter,
                 scoreEnglishPlainTextString(
-                    HexString.fromAsciiString(List.fill(n)(letter).mkString).xor(hexString).toAsciiString, 1)))
+                    HexString.fromAsciiString(List.fill(n)(letter).mkString).xor(hexString).toAsciiString,
+                    nonLetterWeigth,
+                    controlWeigth,
+                    nonAsciiLetterWeigth)))
             .toMap[Char, Double]
 
         val minDeviation = deviations.values.minBy(identity)
@@ -146,10 +162,16 @@ package object set1 {
         (minimum, HexString.fromAsciiString(List.fill(n)(minimum).mkString).xor(hexString), minDeviation)
     }
 
-    def findXorLine(source: BufferedSource): (Char, String, String) = {
+    def findXorLine(source: BufferedSource,
+                    nonLetterWeigth: Double = 0.1,
+                    controlWeigth: Double = 1,
+                    nonAsciiLetterWeigth: Double = 1): (Char, String, String) = {
         val results: List[(Char, String, Double)] = source.getLines().foldLeft(List.empty[(Char, String, Double)])(
             (agg, el) => {
-                val result = decodeXorLetterEncryption(HexString(el))
+                val result = decodeXorLetterEncryption(HexString(el),
+                    nonLetterWeigth,
+                    controlWeigth,
+                    nonAsciiLetterWeigth)
                 (result._1, el, result._3) :: agg
             })
         val minDeviation = results.unzip3._3.minBy(identity)
@@ -170,13 +192,22 @@ package object set1 {
     def calculateHammingDistance(arg1: HexString, arg2: HexString): Int =
         arg1.xor(arg2).countBinaryOnes
 
-    def averageHammingDistance(base64EncodedString: Base64String, keysize: Int): Float = {
+    def averageHammingDistance(base64EncodedString: Base64String, keysize: Int, count: Int = 4): Float = {
         val hexString = base64EncodedString.toHexString
-        val substrings = (1 to 4).map(hexString.extractHexString(_, keysize))
+        val substrings = (1 to count).map(hexString.extractHexString(_, keysize))
         val pairs = for {
             x <- substrings
             y <- substrings if x != y
         } yield (x, y)
-        pairs.map(x => calculateHammingDistance(x._1,x._2)).sum / 12
+        pairs.map(x => calculateHammingDistance(x._1, x._2).toFloat).sum / (count * (count - 1) * keysize)
+    }
+
+    def makeKeysizeBlocks(hexString: HexString, keysize: Int): Seq[Seq[Byte]] = {
+        val block = hexString.toByteArray.grouped(keysize).toList.map(_.padTo(5, 0.toByte))
+        (0 until keysize).foldLeft(Seq.empty[Seq[Byte]])((agg, el) =>
+            agg :+ block.indices.foldLeft(Seq.empty[Byte])((aggI, elI) =>
+                aggI :+ block(elI)(el)
+            )
+        )
     }
 }

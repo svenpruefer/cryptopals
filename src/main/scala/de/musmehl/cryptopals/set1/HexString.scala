@@ -1,7 +1,5 @@
 package de.musmehl.cryptopals.set1
 
-import de.musmehl.cryptopals.set1
-
 /**
   * Class of a hex string supplying various methods for dealing with hex encoded strings
   *
@@ -17,15 +15,14 @@ case class HexString(stringContent: String) {
       */
     def xor(that: HexString): HexString = {
         val xoredSequence = this.toByteArray.zip(that.toByteArray).map(x => x._1 ^ x._2).map(_.toByte)
-        HexString(xoredSequence.map(byteToHexMap).mkString)
+        HexString.fromByteArray(xoredSequence)
     }
 
     /**
       * yields the hex string as a sequence of bytes according to the hexToByteMap.
-      *
-      * Notice that every hex character is an actual byte, i.e. 8 bits instead of the necessary 4 bits.
       */
-    val toByteArray: Seq[Byte] = stringContent.map(hexToByteMap)
+    val toByteArray: Seq[Byte] = stringContent.map(hexToByteMap).grouped(2).toList.map(_.padTo(2, 0.toByte)).toSeq
+        .map(HexString.mapPairOfHexBytesToByte)
 
     /**
       * converts a hex string to a base64 encoded string
@@ -33,9 +30,55 @@ case class HexString(stringContent: String) {
       * @return the hex string as a base64 string
       */
     def toBase64String: Base64String = {
-        val sequenceOfHexBytes: Seq[Seq[Byte]] = toByteArray.grouped(6).toList.map(_.padTo[Byte, Seq[Byte]](6, 0))
-        val sequenceOfBase64Bytes: Seq[Seq[Byte]] = sequenceOfHexBytes.map(mapTripleOfBytesToQuadrupleOfBase64Bytes)
+        val sequenceOfHexBytes: Seq[Seq[Byte]] = toByteArray.grouped(3).toList.map(_.padTo[Byte, Seq[Byte]](3, 0))
+        val sequenceOfBase64Bytes: Seq[Seq[Byte]] = sequenceOfHexBytes.map(HexString.mapTripleOfBytesToQuadrupleOfBase64Bytes)
         Base64String(sequenceOfBase64Bytes.flatten.map(byteToBase64Map).mkString)
+    }
+
+    val toAsciiString: String = {
+       toByteArray.map(_.toChar).mkString
+    }
+
+    def xorWithRepeatingKey(key: HexString): HexString = {
+        val (m, n) = BigInt(stringContent.length) /% BigInt(key.stringContent.length)
+        val actualKey = HexString(
+            List.fill(m.toInt)(key.stringContent).flatten.mkString + key.stringContent.substring(0,n.toInt))
+        this.xor(actualKey)
+    }
+
+    def countBinaryOnes: Int = toByteArray.flatMap(HexString.mapAsciiByteToPairOfHexBytes).map(byteToCountOfBinaryOnes).sum
+
+    private def extractBytes(position: Int, numberOfBytes: Int): Seq[Byte] = {
+        require(position * numberOfBytes <= stringContent.length, "Cannot extract these bytes as the HexString" +
+            " contains not enough bytes.")
+        toByteArray.grouped(numberOfBytes).toIndexedSeq.apply(position - 1)
+    }
+
+    /**
+      * extracts the group of 'numberOfBytes' bytes at 'position' place (counting from one) of the byte representation
+      * of the HexString. Note that two hex characters are saved as one byte
+      *
+      * @param position         position of byte-group to extract, starting at one
+      * @param numberOfBytes    size of groups of bytes which the hex string gets partitioned into
+      * @return                 extracted HexString
+      */
+    def extractHexString(position: Int, numberOfBytes: Int): HexString = {
+        require(position * numberOfBytes <= stringContent.length, "Cannot extract these bytes as the HexString" +
+            " contains not enough bytes.")
+        HexString.fromByteArray(extractBytes(position, numberOfBytes))
+    }
+}
+
+object HexString {
+
+    def fromAsciiString(string: String): HexString = {
+        require(string.forall(_.toByte < 128), "String needs to consist of Ascii characters only")
+
+        HexString(string.map(_.toByte).flatMap(mapAsciiByteToPairOfHexBytes).map(byteToHexMap).mkString)
+    }
+
+    def fromByteArray(byteArray: Seq[Byte]): HexString = {
+        HexString(byteArray.flatMap(mapAsciiByteToPairOfHexBytes).map(byteToHexMap).mkString)
     }
 
     /**
@@ -50,69 +93,30 @@ case class HexString(stringContent: String) {
       *          001111110000101100010001 splitting into 001111, 110000, 101100 and 010001, yielding the integers 15,
       *          48, 34 and 17, corresponding to bytes 0x0f, 0x30, 0x2c and 0x11 or base64 characters P, w, i and R
       */
-    private def mapTripleOfBytesToQuadrupleOfBase64Bytes(array: Seq[Byte]): Seq[Byte] = {
-        require(array.length == 6, "Only works for sixtets of bytes")
-        require(array.forall(_ < 16), "Every byte needs to correspond to a hex character, i.e. needs to be less than 16")
+    def mapTripleOfBytesToQuadrupleOfBase64Bytes(array: Seq[Byte]): Seq[Byte] = {
+        require(array.length == 3, "Only works for triples of hex bytes")
+        require(array.forall(_ < 256), "Every byte needs to correspond to a pair of hex characters, i.e. needs to be less than 256")
 
-        val piece1 = ((array.head << 2) + (array(1) >>> 2)).toByte
-        val piece2 = (((array(1) % 4) << 4) + array(2)).toByte
-        val piece3 = ((array(3) << 2) + (array(4) >>> 2)).toByte
-        val piece4 = (((array(4) % 4) << 4) + array(5)).toByte
+        val piece1 = (array.head >>> 2).toByte
+        val piece2 = (((array.head % 4) << 4) + (array(1) >>> 4)).toByte
+        val piece3 = (((array(1) % 16) << 2) + (array(2) >>> 6)).toByte
+        val piece4 = (array(2) % 64).toByte
 
         Seq(piece1, piece2, piece3, piece4)
     }
 
-    private def mapPairOfHexBytesToByte(array: Seq[Byte]): Byte = {
+    def mapPairOfHexBytesToByte(array: Seq[Byte]): Byte = {
         require(array.length == 2, "Only works for pairs of bytes")
         require(array.forall(_ < 16), "Every byte needs to correspond to a hex character, i.e. needs to be less than 16")
 
-        ((array.head << 4) + array(1)).toByte
+        ((array.head << 4).toByte + array(1)).toByte
     }
 
-    val toAsciiString: String = {
-       toByteArray.grouped(2).toList.map(_.padTo[Byte, Seq[Byte]](2,0)).map(mapPairOfHexBytesToByte).map(_.toChar).mkString
-    }
+    def mapAsciiByteToPairOfHexBytes(byte: Byte): Seq[Byte] = {
 
-    def xorWithRepeatingKey(key: HexString): HexString = {
-        val (m, n) = BigInt(stringContent.length) /% BigInt(key.stringContent.length)
-        val actualKey = HexString(
-            List.fill(m.toInt)(key.stringContent).flatten.mkString + key.stringContent.substring(0,n.toInt))
-        this.xor(actualKey)
-    }
+        val correctedByte = if (byte < 0) byte + 256 else byte
 
-    def countBinaryOnes: Int = toByteArray.map(byteToCountOfBinaryOnes).sum
-
-    private def extractBytes(position: Int, numberOfBytes: Int): Seq[Byte] = {
-        require(2 * position * numberOfBytes <= stringContent.length, "Cannot extract these bytes as the HexString" +
-            " contains not enough bytes.")
-        toByteArray.grouped(2 * numberOfBytes).toIndexedSeq.apply(position - 1)
-    }
-
-    /**
-      * extracts the group of 'numberOfBytes' bytes at 'position' place (counting from one) of the byte representation
-      * of the HexString. Note that every single hex character is saved as a byte instead of two hex characters as one
-      * byte
-      *
-      * @param position         position of byte-group to extract, starting at one
-      * @param numberOfBytes    size of groups of bytes which the hex string gets partitioned into
-      * @return                 extracted HexString
-      */
-    def extractHexString(position: Int, numberOfBytes: Int): HexString = {
-        require(2 * position * numberOfBytes <= stringContent.length, "Cannot extract these bytes as the HexString" +
-            " contains not enough bytes.")
-        HexString.fromByteArray(extractBytes(position, numberOfBytes))
-    }
-}
-
-object HexString {
-    def fromAsciiString(string: String): HexString = {
-        require(string.forall(_.toByte < 128), "String needs to consist of Ascii characters only")
-
-        HexString(string.map(_.toByte).flatMap(x => List(byteToHexMap((x >>> 4).toByte), byteToHexMap((x % 16).toByte))).mkString)
-    }
-
-    def fromByteArray(byteArray: Seq[Byte]): HexString = {
-        HexString(byteArray.map(byteToHexMap).mkString)
+        Seq((correctedByte >>> 4).toByte, (correctedByte % 16).toByte)
     }
 
 }

@@ -1,9 +1,20 @@
 package de.musmehl.cryptopals.set1
 
+import de.musmehl.cryptopals.set1.HexString
 import org.scalatest.FunSuite
 import resource._
 
 class CryptopalsProblems extends FunSuite {
+
+    test("Xoring some HexStrings") {
+        val input = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        assert(HexString.fromAsciiString(input).toAsciiString == input)
+    }
+
+    test("Mapping arrays of bytes") {
+        val input = List(11.toByte, 12.toByte)
+        assert(HexString.mapAsciiByteToPairOfHexBytes(HexString.mapPairOfHexBytesToByte(input)) == input)
+    }
 
     test("Challenge 1") {
         val input = HexString("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d")
@@ -31,7 +42,7 @@ class CryptopalsProblems extends FunSuite {
 
     test("Challenge 4") {
         for (source <- managed(scala.io.Source.fromURL(getClass.getResource("/4.txt")))) {
-            val (minimum, original, decoded) = findXorLine(source)
+            val (minimum, original, decoded) = findXorLine(source, 10, 1, 10)
             println(s"Found key: $minimum for line: $original with decoded result: $decoded")
             assert(minimum == '5')
             assert(decoded == "Now that the party is jumping\n")
@@ -66,25 +77,41 @@ I go crazy when I hear a cymbal"""
     }
 
     test("Convert ByteArray to HexString") {
-        val input = HexString("0123456789abcde")
+        val input = HexString("123456789abcde")
         val result = HexString.fromByteArray(input.toByteArray)
 
         assert(result == input)
     }
 
-    test("Base64String to HexString conversrion") {
+    test("Base64String to HexString conversion") {
         val input = "39984udaWA20ARef6Et2"
 
         assert(Base64String(input).toHexString.toBase64String.stringContent == input)
     }
 
+    test("Refactor sequence of sequences of bytes") {
+        val input = HexString("0a1b2c3d")
+        val result = Seq(Seq(0,1,2,3).map(_.toByte), Seq('a','b','c','d').map(hexToByteMap))
+
+        assert(makeKeysizeBlocks(input,2) == result)
+    }
+
     test("Challenge 6 Determine average Hamming distance for various key sizes") {
-        for (source <- managed(scala.io.Source.fromURL(getClass.getResource("/6.txt")))) {
-            val test = "haha"
-            val input = source.getLines.toList.map(Base64String).toIndexedSeq.apply(0)
-            val results = for { keysize <- 1 to 2} yield (keysize, averageHammingDistance(input, keysize))
-            val (keysize, minHammingDistance) = results.minBy(_._1)
+        val tryKeySize = for (source <- managed(scala.io.Source.fromURL(getClass.getResource("/6.txt"))))
+            yield {
+            val input = Base64String(source.getLines.toList.mkString(""))
+            val results = for { keysize <- 1 to 20 } yield (keysize, averageHammingDistance(input, keysize, 5))
+            val (keysize, minHammingDistance) = results.minBy(_._2)
             println(s"result is keysize $keysize with Hamming distance $minHammingDistance")
+                (keysize, input.toHexString)
         }
+        val keySize = tryKeySize.opt.get._1
+        val hexString = tryKeySize.opt.get._2
+
+        val block = makeKeysizeBlocks(hexString, keySize)
+        val passphrase = (for { position <- 0 until keySize }
+            yield decodeXorLetterEncryption(HexString.fromByteArray(block(position)))._1).mkString
+
+        val a = "b"
     }
 }
