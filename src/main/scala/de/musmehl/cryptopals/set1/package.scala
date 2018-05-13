@@ -203,7 +203,7 @@ package object set1 {
     }
 
     def makeKeysizeBlocks(hexString: HexString, keysize: Int): Seq[Seq[Byte]] = {
-        val block = hexString.toByteArray.grouped(keysize).toList.map(_.padTo(5, 0.toByte))
+        val block = hexString.toByteArray.grouped(keysize).toList.map(_.padTo(keysize, 0.toByte))
         (0 until keysize).foldLeft(Seq.empty[Seq[Byte]])((agg, el) =>
             agg :+ block.indices.foldLeft(Seq.empty[Byte])((aggI, elI) =>
                 aggI :+ block(elI)(el)

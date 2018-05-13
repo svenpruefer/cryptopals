@@ -90,8 +90,8 @@ I go crazy when I hear a cymbal"""
     }
 
     test("Refactor sequence of sequences of bytes") {
-        val input = HexString("0a1b2c3d")
-        val result = Seq(Seq(0,1,2,3).map(_.toByte), Seq('a','b','c','d').map(hexToByteMap))
+        val input = HexString("01ab23cd")
+        val result = Seq(HexString("0123").toByteArray, HexString("abcd").toByteArray)
 
         assert(makeKeysizeBlocks(input,2) == result)
     }
@@ -111,7 +111,5 @@ I go crazy when I hear a cymbal"""
         val block = makeKeysizeBlocks(hexString, keySize)
         val passphrase = (for { position <- 0 until keySize }
             yield decodeXorLetterEncryption(HexString.fromByteArray(block(position)))._1).mkString
-
-        val a = "b"
     }
 }
