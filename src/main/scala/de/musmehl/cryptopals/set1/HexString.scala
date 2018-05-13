@@ -30,8 +30,8 @@ case class HexString(stringContent: String) {
       * @return the hex string as a base64 string
       */
     def toBase64String: Base64String = {
-        val sequenceOfHexBytes: Seq[Seq[Byte]] = toByteArray.grouped(3).toList.map(_.padTo[Byte, Seq[Byte]](3, 0))
-        val sequenceOfBase64Bytes: Seq[Seq[Byte]] = sequenceOfHexBytes.map(HexString.mapTripleOfBytesToQuadrupleOfBase64Bytes)
+        val sequenceOfHexBytes: Seq[Seq[Byte]] = toByteArray.grouped(3).toList.map(_.padTo(3, 0.toByte))
+        val sequenceOfBase64Bytes: Seq[Seq[Byte]] = sequenceOfHexBytes.map(HexString.mapTripleOfHexBytesToQuadrupleOfBase64Bytes)
         Base64String(sequenceOfBase64Bytes.flatten.map(byteToBase64Map).mkString)
     }
 
@@ -93,14 +93,16 @@ object HexString {
       *          001111110000101100010001 splitting into 001111, 110000, 101100 and 010001, yielding the integers 15,
       *          48, 34 and 17, corresponding to bytes 0x0f, 0x30, 0x2c and 0x11 or base64 characters P, w, i and R
       */
-    def mapTripleOfBytesToQuadrupleOfBase64Bytes(array: Seq[Byte]): Seq[Byte] = {
+    def mapTripleOfHexBytesToQuadrupleOfBase64Bytes(array: Seq[Byte]): Seq[Byte] = {
         require(array.length == 3, "Only works for triples of hex bytes")
-        require(array.forall(_ < 256), "Every byte needs to correspond to a pair of hex characters, i.e. needs to be less than 256")
 
-        val piece1 = (array.head >>> 2).toByte
-        val piece2 = (((array.head % 4) << 4) + (array(1) >>> 4)).toByte
-        val piece3 = (((array(1) % 16) << 2) + (array(2) >>> 6)).toByte
-        val piece4 = (array(2) % 64).toByte
+        def fixBytes(byte: Byte): Int = if (byte < 0) byte + 256 else byte
+        val fixedArray = array.map(fixBytes)
+
+        val piece1 = (fixedArray.head >>> 2).toByte
+        val piece2 = (((fixedArray.head % 4) << 4) + (fixedArray(1) >>> 4)).toByte
+        val piece3 = (((fixedArray(1) % 16) << 2) + (fixedArray(2) >>> 6)).toByte
+        val piece4 = (fixedArray(2) % 64).toByte
 
         Seq(piece1, piece2, piece3, piece4)
     }

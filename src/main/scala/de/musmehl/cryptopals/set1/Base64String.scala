@@ -36,8 +36,8 @@ object Base64String {
         require(array.forall(_ < 64), "Every byte needs to correspond to a base64 character, i.e. needs to be less than 64")
 
         val byte1 = ((array.head << 2) + (array(1) >>> 4)).toByte
-        val byte2 = (((array(1) % 16) << 4) + array(2) >>> 2).toByte
-        val byte3 = (((array(2) % 4) << 6) + array(3) % 64).toByte
+        val byte2 = (((array(1) % 16) << 4) + (array(2) >>> 2)).toByte
+        val byte3 = (((array(2) % 4) << 6) + (array(3) % 64)).toByte
 
         Seq(byte1, byte2, byte3)
     }
